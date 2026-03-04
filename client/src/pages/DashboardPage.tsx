@@ -30,6 +30,10 @@ export function DashboardPage({ onLogout }: DashboardPageProps) {
   const [loading, setLoading] = useState(false);
   const [loadingList, setLoadingList] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [lastEncryptedPayload, setLastEncryptedPayload] = useState<{
+    ciphertextB64: string;
+    ivB64: string;
+  } | null>(null);
 
   const loadRecords = async () => {
     const key = getSessionKey();
@@ -92,6 +96,7 @@ export function DashboardPage({ onLogout }: DashboardPageProps) {
 
     try {
       const payload = await encryptJson<FinanceRecord>(form, key);
+      setLastEncryptedPayload(payload);
       await createRecordRequest(payload);
       await loadRecords();
       setForm(emptyRecord());
@@ -165,6 +170,25 @@ export function DashboardPage({ onLogout }: DashboardPageProps) {
             {loading ? "Saving..." : "Save Record"}
           </button>
         </form>
+        {lastEncryptedPayload && (
+          <details style={payloadDetailsStyle}>
+            <summary>Request payload (encrypted) — for demo/screenshot</summary>
+            <pre style={payloadPreStyle}>
+              {JSON.stringify(
+                {
+                  ciphertextB64:
+                    lastEncryptedPayload.ciphertextB64.slice(0, 60) + "...",
+                  ivB64: lastEncryptedPayload.ivB64,
+                },
+                null,
+                2
+              )}
+            </pre>
+            <p style={payloadNoteStyle}>
+              Full ciphertext length: {lastEncryptedPayload.ciphertextB64.length} chars (truncated above).
+            </p>
+          </details>
+        )}
       </section>
 
       <section style={sectionStyle}>
@@ -235,4 +259,24 @@ const errorStyle: React.CSSProperties = {
 const tableStyle: React.CSSProperties = {
   width: "100%",
   borderCollapse: "collapse",
+};
+
+const payloadDetailsStyle: React.CSSProperties = {
+  marginTop: "1rem",
+  padding: "0.75rem",
+  background: "#f5f5f5",
+  borderRadius: 4,
+  fontSize: "0.85rem",
+};
+
+const payloadPreStyle: React.CSSProperties = {
+  margin: "0.5rem 0",
+  overflow: "auto",
+  fontFamily: "monospace",
+};
+
+const payloadNoteStyle: React.CSSProperties = {
+  margin: 0,
+  color: "#666",
+  fontSize: "0.8rem",
 };
